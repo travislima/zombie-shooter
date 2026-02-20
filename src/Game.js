@@ -1,22 +1,26 @@
 import * as THREE from 'three';
 import { Input } from './core/Input.js';
 import { Audio } from './core/Audio.js';
+import { TouchControls } from './core/TouchControls.js';
 import { Player } from './entities/Player.js';
-import { Weapon } from './entities/Weapon.js';
+import { Weapon, WEAPON_TYPES } from './entities/Weapon.js';
 import { ProjectilePool } from './entities/Projectile.js';
 import { EnemyManager } from './entities/Enemy.js';
 import { Arena } from './world/Arena.js';
 import { WaveManager } from './systems/WaveManager.js';
 import { Combat } from './systems/Combat.js';
 import { Particles } from './systems/Particles.js';
+import { PowerupManager } from './systems/Powerups.js';
 import { HUD } from './ui/HUD.js';
 import { Screens } from './ui/Screens.js';
+import { Shop } from './ui/Shop.js';
 
 const STATES = {
   LOADING: 'loading',
   MENU: 'menu',
   PLAYING: 'playing',
   PAUSED: 'paused',
+  SHOP: 'shop',
   GAME_OVER: 'game_over',
 };
 
@@ -33,6 +37,8 @@ export class Game {
     this.audio = new Audio();
     this.hud = new HUD();
     this.screens = new Screens();
+    this.shop = new Shop();
+    this.touchControls = new TouchControls(this.input);
 
     // Game objects (initialized in init)
     this.player = null;
@@ -43,6 +49,7 @@ export class Game {
     this.waveManager = null;
     this.combat = null;
     this.particles = null;
+    this.powerups = null;
   }
 
   init() {
@@ -73,6 +80,7 @@ export class Game {
     this.waveManager = new WaveManager(this.enemies);
     this.combat = new Combat();
     this.particles = new Particles(this.scene);
+    this.powerups = new PowerupManager(this.scene);
 
     // Screen callbacks
     this.screens.init();
@@ -81,6 +89,9 @@ export class Game {
     this.screens.onQuit = () => this._quitToMenu();
     this.screens.onRestart = () => this._startGame();
     this.screens.onMenu = () => this._quitToMenu();
+
+    // Shop callbacks
+    this.shop.onClose = () => this._onShopClosed();
 
     // Window resize
     window.addEventListener('resize', () => {
@@ -92,7 +103,9 @@ export class Game {
     // Pointer lock change handling
     document.addEventListener('pointerlockchange', () => {
       if (!document.pointerLockElement && this.state === STATES.PLAYING) {
-        this._pauseGame();
+        if (!this.touchControls.isTouchDevice) {
+          this._pauseGame();
+        }
       }
     });
 
@@ -128,20 +141,26 @@ export class Game {
     this.waveManager.reset();
     this.combat.reset();
     this.particles.reset();
+    this.powerups.reset();
+    this.shop.reset();
     this.hud.displayedScore = 0;
 
     this.screens.hideAll();
     this.hud.show();
 
-    // Request pointer lock
-    this.input.requestLock(this.renderer.domElement);
+    // Request pointer lock (or enable touch)
+    if (this.touchControls.isTouchDevice) {
+      this.touchControls.enable();
+    } else {
+      this.input.requestLock(this.renderer.domElement);
+    }
     this.state = STATES.PLAYING;
 
     this.audio.startMusic();
 
     // Start first wave
     this.clock.getDelta(); // reset delta
-    this._startNextWave();
+    this._beginWave();
   }
 
   _pauseGame() {
@@ -149,12 +168,17 @@ export class Game {
     this.state = STATES.PAUSED;
     this.screens.showPause();
     this.audio.stopMusic();
+    this.touchControls.disable();
   }
 
   _resumeGame() {
     this.audio.playClick();
     this.screens.hidePause();
-    this.input.requestLock(this.renderer.domElement);
+    if (this.touchControls.isTouchDevice) {
+      this.touchControls.enable();
+    } else {
+      this.input.requestLock(this.renderer.domElement);
+    }
     this.state = STATES.PLAYING;
     this.audio.startMusic();
     this.clock.getDelta(); // reset delta to avoid jump
@@ -165,16 +189,19 @@ export class Game {
     this.audio.stopMusic();
     this.state = STATES.MENU;
     this.input.exitLock();
+    this.touchControls.disable();
     this.hud.hide();
     this.screens.showMenu();
     this.enemies.reset();
     this.projectiles.reset();
     this.particles.reset();
+    this.powerups.reset();
   }
 
   _gameOver() {
     this.state = STATES.GAME_OVER;
     this.input.exitLock();
+    this.touchControls.disable();
     this.hud.hide();
     this.audio.stopMusic();
     this.audio.playGameOver();
@@ -189,6 +216,47 @@ export class Game {
   }
 
   _startNextWave() {
+    // Show shop between waves (after wave 1)
+    if (this.waveManager.wave >= 1 && this.combat.score > 0) {
+      this.state = STATES.SHOP;
+      this.input.exitLock();
+      this.touchControls.disable();
+      this.hud.hide();
+      this.shop.open(this.combat.score);
+      return;
+    }
+
+    this._beginWave();
+  }
+
+  _onShopClosed() {
+    // Apply upgrades
+    this.weapon.applyUpgrades(this.shop.levels);
+
+    // Apply health/shield upgrades
+    const healthBonus = (this.shop.levels.maxHealth || 0) * 25;
+    this.player.maxHealth = 100 + healthBonus;
+    this.player.health = Math.min(this.player.health, this.player.maxHealth);
+
+    const shieldBonus = (this.shop.levels.shieldRegen || 0) * 2;
+    this.player.shieldRegenRate = 5 + shieldBonus;
+
+    // Deduct spent points
+    this.combat.score = this.shop.pointsRemaining;
+    this.hud.displayedScore = this.combat.score;
+
+    // Resume game
+    this.hud.show();
+    if (this.touchControls.isTouchDevice) {
+      this.touchControls.enable();
+    } else {
+      this.input.requestLock(this.renderer.domElement);
+    }
+    this.state = STATES.PLAYING;
+    this._beginWave();
+  }
+
+  _beginWave() {
     const wave = this.waveManager.startNextWave();
     this.hud.showWaveAnnouncement(wave, this.waveManager.getWaveSubtext());
     if (wave > 1) {
@@ -210,6 +278,9 @@ export class Game {
   }
 
   _updateGameplay(dt) {
+    // Touch controls
+    this.touchControls.applyToInput();
+
     // Input handling
     if (this.input.consumeEsc()) {
       this._pauseGame();
@@ -226,22 +297,31 @@ export class Game {
     // Weapon update
     this.weapon.update(dt);
 
-    // Shooting
+    // Shooting - weapon.fire() now returns array of shots
     if (this.input.mouseDown && this.weapon.canFire()) {
-      const shotInfo = this.weapon.fire();
-      if (shotInfo) {
-        this.projectiles.spawn(
-          shotInfo.origin,
-          shotInfo.direction,
-          shotInfo.speed,
-          shotInfo.damage,
-          true,
-        );
+      const shots = this.weapon.fire();
+      if (shots) {
+        for (const shotInfo of shots) {
+          this.projectiles.spawn(
+            shotInfo.origin,
+            shotInfo.direction,
+            shotInfo.speed,
+            shotInfo.damage,
+            true,
+          );
+        }
         this.audio.playShoot();
         this.hud.addScreenShake(0.15);
-        this.particles.spawnMuzzleFlash(shotInfo.origin.clone().add(shotInfo.direction.clone().multiplyScalar(1)), shotInfo.direction);
+        const firstShot = shots[0];
+        this.particles.spawnMuzzleFlash(
+          firstShot.origin.clone().add(firstShot.direction.clone().multiplyScalar(1)),
+          firstShot.direction,
+        );
       }
     }
+
+    // Clear touch input after processing
+    this.touchControls.clearInput();
 
     // Update projectiles
     this.projectiles.update(dt);
@@ -265,6 +345,8 @@ export class Game {
         this.hud.addScreenShake(0.3);
         this.waveManager.onEnemyKilled();
         this.particles.spawnScorePopup(hit.position, hit.points);
+        // Chance to drop powerup
+        this.powerups.onEnemyKilled(hit.position);
       }
     }
 
@@ -284,6 +366,9 @@ export class Game {
         return;
       }
     }
+
+    // Powerups
+    this.powerups.update(dt, this.player.position, this.player, this.weapon, this.hud);
 
     // Combat system update (combos etc)
     this.combat.update(dt);
@@ -306,6 +391,7 @@ export class Game {
     this.camera.position.y += shake.y;
 
     // HUD
+    const weaponConfig = WEAPON_TYPES[this.weapon.currentType];
     this.hud.update(dt, {
       health: this.player.health,
       maxHealth: this.player.maxHealth,
@@ -318,6 +404,7 @@ export class Game {
       combo: this.combat.combo,
       comboMultiplier: this.combat.comboMultiplier,
       enemyCount: this.enemies.count,
+      weaponName: weaponConfig ? weaponConfig.name : 'PISTOL',
     });
   }
 }

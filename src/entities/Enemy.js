@@ -32,6 +32,17 @@ export const ENEMY_TYPES = {
     meleeRange: 1.5,
     attackCooldown: 0.6,
   },
+  tank: {
+    health: 150,
+    speed: 1.8,
+    damage: 30,
+    points: 500,
+    color: 0x5a3a5a,      // bruised purple
+    emissive: 0x3a1a3a,   // dark purple glow
+    size: 0.8,
+    meleeRange: 2.0,
+    attackCooldown: 1.5,
+  },
 };
 
 const POOL_SIZE = 40;
