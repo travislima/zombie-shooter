@@ -58,7 +58,6 @@ export class Game {
 
     // Scene
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.FogExp2(0x9e9688, 0.012);
 
     // Camera
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
@@ -247,10 +246,10 @@ export class Game {
     // Update projectiles
     this.projectiles.update(dt);
 
-    // Update enemies
-    this.enemies.update(dt, this.player.position, this.projectiles, this.audio);
+    // Update enemies (no projectiles needed - melee only)
+    this.enemies.update(dt, this.player.position);
 
-    // Combat checks
+    // Combat checks - player projectiles vs enemies
     const hits = this.combat.checkPlayerProjectiles(
       this.projectiles.getActive(),
       this.enemies.getActive(),
@@ -269,15 +268,16 @@ export class Game {
       }
     }
 
-    // Enemy projectile vs player
-    const playerHit = this.combat.checkEnemyProjectiles(
-      this.projectiles.getActive(),
+    // Enemy melee vs player (zombies damage on contact)
+    const playerHit = this.combat.checkEnemyMelee(
+      this.enemies.getActive(),
       this.player,
+      this.audio,
     );
     if (playerHit) {
       this.audio.playDamage();
       this.hud.showDamageVignette();
-      this.hud.addScreenShake(0.2);
+      this.hud.addScreenShake(0.3);
 
       if (!this.player.alive) {
         this._gameOver();

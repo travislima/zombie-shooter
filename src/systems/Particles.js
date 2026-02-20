@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-const MAX_PARTICLES = 500;
+const MAX_PARTICLES = 600;
 
 export class Particles {
   constructor(scene) {
@@ -18,42 +18,60 @@ export class Particles {
   }
 
   spawnHitEffect(position, color = 0x00ddff) {
-    const count = 6;
+    // Blood splatter on hit
+    const count = 10;
     for (let i = 0; i < count; i++) {
       const p = this._getParticle();
       if (!p) break;
 
       const dir = new THREE.Vector3(
         (Math.random() - 0.5) * 2,
-        (Math.random() - 0.5) * 2,
+        Math.random() * 1.5,
         (Math.random() - 0.5) * 2,
       ).normalize();
 
+      const isBlood = i < 6;
       p.activate({
         position: position.clone(),
-        velocity: dir.multiplyScalar(3 + Math.random() * 3),
-        color,
-        size: 0.05 + Math.random() * 0.08,
-        life: 0.2 + Math.random() * 0.2,
-        gravity: -2,
+        velocity: dir.multiplyScalar(2 + Math.random() * 4),
+        color: isBlood ? (Math.random() > 0.5 ? 0x8a1111 : 0x660808) : color,
+        size: isBlood ? 0.04 + Math.random() * 0.06 : 0.03 + Math.random() * 0.05,
+        life: 0.3 + Math.random() * 0.3,
+        gravity: -8,
       });
     }
   }
 
   spawnExplosion(position, color = 0xff8800) {
-    const count = 20;
+    // Death explosion - bigger, bloodier
+    const count = 25;
     for (let i = 0; i < count; i++) {
       const p = this._getParticle();
       if (!p) break;
 
       const dir = new THREE.Vector3(
         (Math.random() - 0.5) * 2,
-        Math.random(),
+        Math.random() * 1.2,
         (Math.random() - 0.5) * 2,
       ).normalize();
 
-      const speed = 2 + Math.random() * 6;
-      const isCore = i < 5;
+      const speed = 2 + Math.random() * 7;
+      let pColor;
+      let pSize;
+
+      if (i < 4) {
+        // Core flash
+        pColor = 0xffddaa;
+        pSize = 0.15 + Math.random() * 0.1;
+      } else if (i < 14) {
+        // Blood chunks
+        pColor = Math.random() > 0.3 ? 0x8a1111 : 0x550808;
+        pSize = 0.05 + Math.random() * 0.08;
+      } else {
+        // Debris/bone
+        pColor = Math.random() > 0.5 ? 0xccbbaa : color;
+        pSize = 0.03 + Math.random() * 0.06;
+      }
 
       p.activate({
         position: position.clone().add(new THREE.Vector3(
@@ -62,16 +80,16 @@ export class Particles {
           (Math.random() - 0.5) * 0.3,
         )),
         velocity: dir.multiplyScalar(speed),
-        color: isCore ? 0xffffff : color,
-        size: isCore ? 0.15 : 0.05 + Math.random() * 0.1,
-        life: 0.3 + Math.random() * 0.4,
-        gravity: -3,
+        color: pColor,
+        size: pSize,
+        life: 0.4 + Math.random() * 0.5,
+        gravity: -6,
       });
     }
   }
 
   spawnMuzzleFlash(position, direction) {
-    const count = 3;
+    const count = 4;
     for (let i = 0; i < count; i++) {
       const p = this._getParticle();
       if (!p) break;
@@ -84,24 +102,27 @@ export class Particles {
 
       p.activate({
         position: position.clone(),
-        velocity: spread.multiplyScalar(8 + Math.random() * 4),
-        color: 0xffaa44,
+        velocity: spread.multiplyScalar(8 + Math.random() * 5),
+        color: i === 0 ? 0xffffff : 0xffaa44,
         size: 0.03 + Math.random() * 0.04,
-        life: 0.08 + Math.random() * 0.08,
+        life: 0.06 + Math.random() * 0.08,
         gravity: 0,
       });
     }
   }
 
   spawnScorePopup(position, points) {
-    // Using a sprite for floating score text
+    // Floating score text sprite
     const canvas = document.createElement('canvas');
     canvas.width = 128;
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
     ctx.font = 'bold 32px Courier New';
     ctx.fillStyle = '#ffff00';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 3;
     ctx.textAlign = 'center';
+    ctx.strokeText(`+${points}`, 64, 40);
     ctx.fillText(`+${points}`, 64, 40);
 
     const texture = new THREE.CanvasTexture(canvas);
@@ -112,7 +133,6 @@ export class Particles {
     sprite.scale.set(1.5, 0.75, 1);
     this.scene.add(sprite);
 
-    // Animate and remove
     const startTime = Date.now();
     const animate = () => {
       const elapsed = (Date.now() - startTime) / 1000;
@@ -188,6 +208,14 @@ class Particle {
     // Move
     this.velocity.y += this.gravity * dt;
     this.mesh.position.addScaledVector(this.velocity, dt);
+
+    // Stop at ground level
+    if (this.mesh.position.y < 0.02) {
+      this.mesh.position.y = 0.02;
+      this.velocity.y = 0;
+      this.velocity.x *= 0.8;
+      this.velocity.z *= 0.8;
+    }
 
     // Fade
     const t = this.life / this.maxLife;

@@ -71,18 +71,16 @@ export class Combat {
     return hits;
   }
 
-  // Check enemy projectiles against player
-  checkEnemyProjectiles(projectiles, player) {
+  // Check enemy melee attacks against player
+  checkEnemyMelee(enemies, player, audio) {
     if (!player.alive) return false;
 
     let hit = false;
-    for (const proj of projectiles) {
-      if (!proj.active || proj.isPlayer) continue;
-
-      const dist = proj.position.distanceTo(player.position);
-      if (dist < PLAYER_RADIUS + 0.1) {
-        player.takeDamage(proj.damage);
-        proj.deactivate();
+    for (const enemy of enemies) {
+      if (!enemy.active) continue;
+      if (enemy.canMelee(player.position)) {
+        player.takeDamage(enemy.config.damage);
+        enemy.onMeleeHit();
         hit = true;
       }
     }
@@ -92,8 +90,6 @@ export class Combat {
   // Hitscan check from camera center (for instant-feel shooting alongside projectile)
   raycastFromCamera(camera, enemies) {
     this._raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
-    // We don't use this for actual damage - projectiles handle that
-    // This could be used for crosshair highlighting
     return null;
   }
 
@@ -118,6 +114,5 @@ export class Combat {
   // Called when player misses (projectile hits nothing)
   onMiss() {
     // Combo resets on miss are handled by timeout instead
-    // to feel less punishing
   }
 }
