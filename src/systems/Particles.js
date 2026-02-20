@@ -85,7 +85,7 @@ export class Particles {
       p.activate({
         position: position.clone(),
         velocity: spread.multiplyScalar(8 + Math.random() * 4),
-        color: 0x00ccff,
+        color: 0xffaa44,
         size: 0.03 + Math.random() * 0.04,
         life: 0.08 + Math.random() * 0.08,
         gravity: 0,

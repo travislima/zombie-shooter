@@ -42,14 +42,14 @@ export class WaveManager {
   _buildWaveComposition(wave) {
     const queue = [];
 
-    // Base drone count increases with wave
-    const droneCount = Math.min(3 + wave * 2, 20);
+    // Base walker count increases with wave
+    const walkerCount = Math.min(3 + wave * 2, 20);
 
-    // Soldiers appear from wave 3
-    const soldierCount = wave >= 3 ? Math.min(Math.floor((wave - 2) * 1.5), 10) : 0;
+    // Runners appear from wave 3
+    const runnerCount = wave >= 3 ? Math.min(Math.floor((wave - 2) * 1.5), 10) : 0;
 
-    for (let i = 0; i < droneCount; i++) queue.push('drone');
-    for (let i = 0; i < soldierCount; i++) queue.push('soldier');
+    for (let i = 0; i < walkerCount; i++) queue.push('walker');
+    for (let i = 0; i < runnerCount; i++) queue.push('runner');
 
     // Shuffle
     for (let i = queue.length - 1; i > 0; i--) {
@@ -132,9 +132,9 @@ export class WaveManager {
   }
 
   getWaveSubtext() {
-    if (this.wave <= 2) return 'Drones incoming';
-    if (this.wave <= 5) return 'Soldiers have arrived';
-    if (this.wave <= 10) return 'The invasion intensifies';
-    return 'Maximum threat level';
+    if (this.wave <= 2) return 'Walkers approaching';
+    if (this.wave <= 5) return 'Runners spotted';
+    if (this.wave <= 10) return 'The horde grows';
+    return 'Total outbreak';
   }
 }

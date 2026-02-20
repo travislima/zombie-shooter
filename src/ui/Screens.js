@@ -1,4 +1,4 @@
-const HIGH_SCORE_KEY = 'cosmic-defender-highscore';
+const HIGH_SCORE_KEY = 'zombie-shooter-highscore';
 
 export class Screens {
   constructor() {
@@ -104,7 +104,7 @@ export class Screens {
     // Stats
     this.el.finalStats.innerHTML = [
       `Wave Reached: ${stats.wave}`,
-      `Enemies Killed: ${stats.kills}`,
+      `Zombies Killed: ${stats.kills}`,
       `Accuracy: ${stats.accuracy.toFixed(1)}%`,
       `Highest Combo: ${stats.highestCombo}x`,
     ].join('<br>');

@@ -63,14 +63,14 @@ class ProjectileInstance {
 
     // Mesh - small glowing sphere with trail
     const geo = new THREE.SphereGeometry(0.08, 6, 6);
-    this.playerMat = new THREE.MeshBasicMaterial({ color: 0x00ddff });
+    this.playerMat = new THREE.MeshBasicMaterial({ color: 0xffbb44 });
     this.enemyMat = new THREE.MeshBasicMaterial({ color: 0xff4444 });
     this.mesh = new THREE.Mesh(geo, this.playerMat);
     this.mesh.visible = false;
     scene.add(this.mesh);
 
     // Point light for glow
-    this.light = new THREE.PointLight(0x00ddff, 0.5, 5);
+    this.light = new THREE.PointLight(0xffbb44, 0.5, 5);
     this.light.visible = false;
     this.mesh.add(this.light);
 
@@ -78,7 +78,7 @@ class ProjectileInstance {
     const trailGeo = new THREE.CylinderGeometry(0.02, 0.05, 0.5, 4);
     trailGeo.rotateX(Math.PI / 2);
     trailGeo.translate(0, 0, 0.25);
-    this.trailPlayerMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, transparent: true, opacity: 0.4 });
+    this.trailPlayerMat = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.4 });
     this.trailEnemyMat = new THREE.MeshBasicMaterial({ color: 0xff2222, transparent: true, opacity: 0.4 });
     this.trail = new THREE.Mesh(trailGeo, this.trailPlayerMat);
     this.mesh.add(this.trail);
@@ -96,7 +96,7 @@ class ProjectileInstance {
 
     this.mesh.material = isPlayer ? this.playerMat : this.enemyMat;
     this.trail.material = isPlayer ? this.trailPlayerMat : this.trailEnemyMat;
-    this.light.color.set(isPlayer ? 0x00ddff : 0xff4444);
+    this.light.color.set(isPlayer ? 0xffbb44 : 0xff4444);
 
     this.mesh.position.copy(origin);
     this.mesh.visible = true;

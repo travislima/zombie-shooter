@@ -32,7 +32,7 @@ export class Weapon {
 
   _createMuzzleFlash() {
     const geo = new THREE.SphereGeometry(0.08, 8, 8);
-    const mat = new THREE.MeshBasicMaterial({ color: 0x00ddff, transparent: true, opacity: 0 });
+    const mat = new THREE.MeshBasicMaterial({ color: 0xffaa33, transparent: true, opacity: 0 });
     const flash = new THREE.Mesh(geo, mat);
     flash.layers.set(1); // separate layer so it's always visible
     return flash;
@@ -58,7 +58,7 @@ export class Weapon {
 
     // Glow tip
     const tipGeo = new THREE.SphereGeometry(0.018, 8, 8);
-    const tipMat = new THREE.MeshBasicMaterial({ color: 0x00aaff });
+    const tipMat = new THREE.MeshBasicMaterial({ color: 0xffaa33 });
     const tip = new THREE.Mesh(tipGeo, tipMat);
     tip.position.z = -0.5;
     group.add(tip);
