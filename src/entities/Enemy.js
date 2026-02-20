@@ -9,30 +9,30 @@ const STATE = {
   DYING: 4,
 };
 
-// Enemy type configs
+// Enemy type configs - zombies
 export const ENEMY_TYPES = {
-  drone: {
+  walker: {
     health: 20,
     speed: 3,
     damage: 5,
     points: 100,
     fireRate: 0.8,    // shots per second
     projectileSpeed: 15,
-    color: 0x44ff44,
-    emissive: 0x22aa22,
+    color: 0x5a7a3a,      // sickly green
+    emissive: 0x2a4a1a,   // dark green glow
     size: 0.5,
     attackRange: 20,
     preferredRange: 12,
   },
-  soldier: {
+  runner: {
     health: 40,
     speed: 4,
     damage: 8,
     points: 250,
     fireRate: 1.2,
     projectileSpeed: 18,
-    color: 0x4488ff,
-    emissive: 0x2244aa,
+    color: 0x7a4a3a,      // rotting brown
+    emissive: 0x4a2a1a,   // dark brown glow
     size: 0.6,
     attackRange: 22,
     preferredRange: 10,
@@ -99,7 +99,7 @@ class EnemyInstance {
   constructor(scene) {
     this.scene = scene;
     this.active = false;
-    this.type = 'drone';
+    this.type = 'walker';
     this.config = null;
     this.position = new THREE.Vector3();
     this.velocity = new THREE.Vector3();
@@ -121,20 +121,31 @@ class EnemyInstance {
     this.group.visible = false;
     scene.add(this.group);
 
-    // Body mesh - will be reconfigured per type
-    this.bodyGeo = new THREE.OctahedronGeometry(0.5, 0);
+    // Body mesh - zombie torso
+    this.bodyGeo = new THREE.BoxGeometry(0.4, 0.6, 0.3);
     this.bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x44ff44,
-      emissive: 0x22aa22,
-      emissiveIntensity: 0.3,
-      metalness: 0.5,
-      roughness: 0.4,
+      color: 0x5a7a3a,
+      emissive: 0x2a4a1a,
+      emissiveIntensity: 0.2,
+      metalness: 0.1,
+      roughness: 0.8,
     });
     this.body = new THREE.Mesh(this.bodyGeo, this.bodyMat);
     this.group.add(this.body);
 
-    // Glow
-    this.light = new THREE.PointLight(0x44ff44, 0.3, 6);
+    // Zombie head
+    const headGeo = new THREE.SphereGeometry(0.2, 8, 8);
+    this.headMat = new THREE.MeshStandardMaterial({
+      color: 0x6a8a4a,
+      roughness: 0.7,
+      metalness: 0.1,
+    });
+    this.head = new THREE.Mesh(headGeo, this.headMat);
+    this.head.position.y = 0.45;
+    this.group.add(this.head);
+
+    // Glow - eerie
+    this.light = new THREE.PointLight(0x5a7a3a, 0.2, 4);
     this.group.add(this.light);
 
     // Health bar
@@ -151,12 +162,16 @@ class EnemyInstance {
     this.healthBarFill.position.z = 0.001;
     this.group.add(this.healthBarFill);
 
-    // "Eye" - glowing center
-    const eyeGeo = new THREE.SphereGeometry(0.1, 8, 8);
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    this.eye = new THREE.Mesh(eyeGeo, eyeMat);
-    this.eye.position.z = 0.4;
-    this.group.add(this.eye);
+    // Eyes - glowing yellow zombie eyes
+    const eyeGeo = new THREE.SphereGeometry(0.05, 8, 8);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0xccaa00 });
+    this.eyeLeft = new THREE.Mesh(eyeGeo, eyeMat);
+    this.eyeLeft.position.set(-0.08, 0.48, 0.15);
+    this.group.add(this.eyeLeft);
+
+    this.eyeRight = new THREE.Mesh(eyeGeo.clone(), eyeMat.clone());
+    this.eyeRight.position.set(0.08, 0.48, 0.15);
+    this.group.add(this.eyeRight);
 
     this._origColor = new THREE.Color();
     this._origEmissive = new THREE.Color();
@@ -188,15 +203,22 @@ class EnemyInstance {
     this._origEmissive.set(config.emissive);
     this.light.color.set(config.color);
 
+    // Update head color to match type
+    const headColor = type === 'runner' ? 0x8a5a4a : 0x6a8a4a;
+    this.headMat.color.set(headColor);
+
     const s = config.size;
     this.body.scale.setScalar(s);
+    this.head.scale.setScalar(s);
 
-    // Different geometry per type
+    // Different body shape per type
     this.group.remove(this.body);
-    if (type === 'soldier') {
-      this.bodyGeo = new THREE.DodecahedronGeometry(0.5, 0);
+    if (type === 'runner') {
+      // Runner - leaner, more aggressive shape
+      this.bodyGeo = new THREE.BoxGeometry(0.35, 0.7, 0.25);
     } else {
-      this.bodyGeo = new THREE.OctahedronGeometry(0.5, 0);
+      // Walker - stockier, shambling shape
+      this.bodyGeo = new THREE.BoxGeometry(0.45, 0.55, 0.35);
     }
     this.body = new THREE.Mesh(this.bodyGeo, this.bodyMat);
     this.body.scale.setScalar(s);
@@ -236,13 +258,15 @@ class EnemyInstance {
         this.bodyMat.emissiveIntensity = 2;
       } else {
         this.bodyMat.emissive.copy(this._origEmissive);
-        this.bodyMat.emissiveIntensity = 0.3;
+        this.bodyMat.emissiveIntensity = 0.2;
       }
     }
 
-    // Floating bob
+    // Shambling bob animation
     if (this.state !== STATE.DYING) {
-      this.position.y = 1.2 + Math.sin(Date.now() * 0.003 + this.position.x * 10) * 0.15;
+      this.position.y = 1.2 + Math.sin(Date.now() * 0.003 + this.position.x * 10) * 0.08;
+      // Slight tilt for shambling effect
+      this.body.rotation.z = Math.sin(Date.now() * 0.004 + this.position.z * 5) * 0.15;
     }
 
     // Update group position
@@ -259,10 +283,9 @@ class EnemyInstance {
     this.healthBarFill.scale.x = Math.max(0.001, hpRatio);
     this.healthBarFill.position.x = (hpRatio - 1) * 0.4;
 
-    // Body rotation
+    // Body rotation - slow shambling turn instead of spinning
     if (this.state !== STATE.DYING) {
-      this.body.rotation.y += dt * 1.5;
-      this.body.rotation.x += dt * 0.5;
+      this.body.rotation.y += dt * 0.3;
     }
   }
 
@@ -287,7 +310,7 @@ class EnemyInstance {
       this.position.addScaledVector(toPlayer, this.config.speed * dt);
     } else {
       // Switch to attack/strafe
-      this.state = this.type === 'soldier' ? STATE.STRAFING : STATE.ATTACKING;
+      this.state = this.type === 'runner' ? STATE.STRAFING : STATE.ATTACKING;
     }
   }
 
@@ -347,7 +370,7 @@ class EnemyInstance {
   }
 
   _handleFiring(dt, playerPos, projectilePool, audio) {
-    // Burst fire for soldiers
+    // Burst fire for runners
     if (this.burstRemaining > 0) {
       this.burstTimer -= dt;
       if (this.burstTimer <= 0) {
@@ -394,9 +417,8 @@ class EnemyInstance {
     const t = this.deathTimer / 0.4;
 
     this.group.scale.setScalar(Math.max(0.01, 1 - t));
-    this.body.rotation.x += dt * 10;
-    this.body.rotation.y += dt * 10;
-    this.bodyMat.emissive.set(0xffffff);
+    this.body.rotation.x += dt * 5;
+    this.bodyMat.emissive.set(0xaa3300);
     this.bodyMat.emissiveIntensity = 2 * (1 - t);
 
     if (t >= 1) {
@@ -424,7 +446,7 @@ class EnemyInstance {
     this.group.visible = false;
     this.group.scale.setScalar(1);
     this.bodyMat.emissive.copy(this._origEmissive);
-    this.bodyMat.emissiveIntensity = 0.3;
+    this.bodyMat.emissiveIntensity = 0.2;
   }
 
   // Bounding sphere radius for collision
