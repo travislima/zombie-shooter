@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Zombie Shooter</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -12,6 +12,7 @@
       font-family: 'Courier New', monospace;
       color: #fff;
       user-select: none;
+      touch-action: none;
     }
     canvas { display: block; }
 
@@ -143,6 +144,75 @@
       50% { opacity: 0.5; }
     }
 
+    /* Shop screen */
+    #shop-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      background: rgba(20, 15, 10, 0.92);
+    }
+    #shop-screen.hidden { display: none; }
+    #shop-screen h2 {
+      font-size: 2rem;
+      color: #ff0;
+      text-shadow: 0 0 20px rgba(255, 255, 0, 0.3);
+      margin-bottom: 0.5rem;
+    }
+    #shop-points-display {
+      color: #ff0;
+      font-size: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    #shop-items {
+      width: 320px;
+      max-height: 60vh;
+      overflow-y: auto;
+    }
+    .shop-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      margin: 6px 0;
+      border: 1px solid #664;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .shop-item:hover {
+      background: rgba(255, 255, 0, 0.08);
+      border-color: #ff0;
+    }
+    .shop-item.maxed {
+      opacity: 0.4;
+      cursor: default;
+      border-color: #333;
+    }
+    .shop-item.maxed:hover { background: transparent; border-color: #333; }
+    .shop-item.expensive {
+      opacity: 0.5;
+      cursor: default;
+    }
+    .shop-item.expensive:hover { background: transparent; }
+    .shop-item-name {
+      font-size: 0.9rem;
+      color: #ff0;
+    }
+    .shop-item-desc {
+      font-size: 0.7rem;
+      color: #998;
+      margin-top: 2px;
+    }
+    .shop-item-cost {
+      font-size: 1rem;
+      color: #ff0;
+      min-width: 60px;
+      text-align: right;
+    }
+
     /* Wave announcement */
     #wave-announce {
       position: fixed;
@@ -257,6 +327,11 @@
       font-size: 0.7rem;
       color: #998;
     }
+    #weapon-name {
+      font-size: 0.65rem;
+      color: #aaa;
+      margin-top: 2px;
+    }
 
     /* Score */
     #score-display {
@@ -346,6 +421,20 @@
     #hit-marker .hm-bl { bottom: 2px; left: 2px; transform: rotate(-45deg); }
     #hit-marker .hm-br { bottom: 2px; right: 2px; transform: rotate(45deg); }
 
+    /* Pickup notification */
+    #pickup-notify {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.2rem;
+      color: #4f4;
+      text-shadow: 0 0 15px rgba(68, 255, 68, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+
     /* Damage vignette */
     #damage-vignette {
       position: fixed;
@@ -355,6 +444,74 @@
       opacity: 0;
       background: radial-gradient(ellipse at center, transparent 50%, rgba(180, 0, 0, 0.6) 100%);
       transition: opacity 0.1s;
+    }
+
+    /* Touch controls */
+    #touch-controls {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 15;
+      pointer-events: none;
+    }
+    #touch-joystick-area {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 40%;
+      height: 50%;
+      pointer-events: auto;
+    }
+    #touch-joystick-ring {
+      display: none;
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+    }
+    #touch-joystick-knob {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 40px;
+      height: 40px;
+      margin: -20px 0 0 -20px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transition: transform 0.05s;
+    }
+    #touch-fire-btn {
+      position: absolute;
+      bottom: 60px;
+      right: 40px;
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: rgba(204, 68, 68, 0.4);
+      border: 2px solid rgba(204, 68, 68, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: #fff;
+      pointer-events: auto;
+    }
+    #touch-reload-btn {
+      position: absolute;
+      bottom: 160px;
+      right: 50px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(150, 150, 150, 0.3);
+      border: 2px solid rgba(150, 150, 150, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: #aaa;
+      pointer-events: auto;
     }
   </style>
 </head>
@@ -398,6 +555,14 @@
     <button class="menu-btn" id="btn-menu">MAIN MENU</button>
   </div>
 
+  <!-- Shop Screen -->
+  <div id="shop-screen" class="hidden">
+    <h2>UPGRADE SHOP</h2>
+    <div id="shop-points-display">POINTS: <span id="shop-points">0</span></div>
+    <div id="shop-items"></div>
+    <button class="menu-btn" id="btn-shop-close" style="margin-top: 1.5rem;">NEXT WAVE</button>
+  </div>
+
   <!-- Wave Announcement -->
   <div id="wave-announce">
     <div class="wave-num" id="wave-announce-num">WAVE 1</div>
@@ -423,6 +588,7 @@
     <div id="ammo-display">
       <div class="ammo-count" id="ammo-count">20</div>
       <div class="ammo-label">AMMO</div>
+      <div id="weapon-name">PISTOL</div>
     </div>
 
     <div id="score-display">
@@ -450,6 +616,8 @@
       <div class="hm-line hm-bl"></div>
       <div class="hm-line hm-br"></div>
     </div>
+
+    <div id="pickup-notify"></div>
   </div>
 
   <div id="damage-vignette"></div>

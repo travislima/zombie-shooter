@@ -15,12 +15,15 @@ export class HUD {
       waveAnnounce: document.getElementById('wave-announce'),
       waveAnnounceNum: document.getElementById('wave-announce-num'),
       waveAnnounceSub: document.getElementById('wave-announce-sub'),
+      weaponName: document.getElementById('weapon-name'),
+      pickupNotify: document.getElementById('pickup-notify'),
     };
 
     this.hitMarkerTimer = 0;
     this.damageVignetteTimer = 0;
     this.screenShakeAmount = 0;
     this.displayedScore = 0;
+    this.pickupTimer = 0;
   }
 
   show() {
@@ -57,6 +60,11 @@ export class HUD {
       ammoEl.className = 'ammo-count' + (state.ammo <= 5 ? ' low' : '');
     }
 
+    // Weapon name
+    if (this.el.weaponName && state.weaponName) {
+      this.el.weaponName.textContent = state.weaponName;
+    }
+
     // Score (animated)
     if (this.displayedScore < state.score) {
       const diff = state.score - this.displayedScore;
@@ -91,6 +99,17 @@ export class HUD {
       this.el.damageVignette.style.opacity = Math.max(0, this.damageVignetteTimer / 0.4);
     }
 
+    // Pickup notification fade
+    if (this.pickupTimer > 0) {
+      this.pickupTimer -= dt;
+      if (this.el.pickupNotify) {
+        this.el.pickupNotify.style.opacity = Math.min(1, this.pickupTimer / 0.3);
+        if (this.pickupTimer <= 0) {
+          this.el.pickupNotify.style.opacity = 0;
+        }
+      }
+    }
+
     // Screen shake
     if (this.screenShakeAmount > 0) {
       this.screenShakeAmount *= Math.pow(0.001, dt);
@@ -101,7 +120,6 @@ export class HUD {
   showHitMarker(killed) {
     this.hitMarkerTimer = 0.15;
     this.el.hitMarker.style.opacity = 1;
-    // Change color for kills
     const color = killed ? '#ff0' : '#fff';
     this.el.hitMarker.querySelectorAll('.hm-line').forEach(l => {
       l.style.background = color;
@@ -111,6 +129,13 @@ export class HUD {
   showDamageVignette() {
     this.damageVignetteTimer = 0.4;
     this.el.damageVignette.style.opacity = 0.5;
+  }
+
+  showPickupNotification(label) {
+    if (!this.el.pickupNotify) return;
+    this.el.pickupNotify.textContent = label;
+    this.el.pickupNotify.style.opacity = 1;
+    this.pickupTimer = 2;
   }
 
   addScreenShake(amount) {

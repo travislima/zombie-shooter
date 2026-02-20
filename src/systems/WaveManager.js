@@ -48,8 +48,12 @@ export class WaveManager {
     // Runners appear from wave 3
     const runnerCount = wave >= 3 ? Math.min(Math.floor((wave - 2) * 1.5), 10) : 0;
 
+    // Tanks appear from wave 5
+    const tankCount = wave >= 5 ? Math.min(Math.floor((wave - 4) * 0.8), 5) : 0;
+
     for (let i = 0; i < walkerCount; i++) queue.push('walker');
     for (let i = 0; i < runnerCount; i++) queue.push('runner');
+    for (let i = 0; i < tankCount; i++) queue.push('tank');
 
     // Shuffle
     for (let i = queue.length - 1; i > 0; i--) {
@@ -133,7 +137,8 @@ export class WaveManager {
 
   getWaveSubtext() {
     if (this.wave <= 2) return 'Walkers approaching';
-    if (this.wave <= 5) return 'Runners spotted';
+    if (this.wave <= 4) return 'Runners spotted';
+    if (this.wave === 5) return 'TANK INCOMING';
     if (this.wave <= 10) return 'The horde grows';
     return 'Total outbreak';
   }

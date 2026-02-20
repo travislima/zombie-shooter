@@ -25,6 +25,7 @@ export class Player {
 
     this.alive = true;
     this.bobPhase = 0;
+    this.speedMultiplier = 1;
 
     // Stats
     this.damageDealt = 0;
@@ -43,6 +44,7 @@ export class Player {
     this.damageDealt = 0;
     this.damageTaken = 0;
     this.bobPhase = 0;
+    this.speedMultiplier = 1;
   }
 
   update(dt, input) {
@@ -73,7 +75,7 @@ export class Player {
       moveDir.z = rz;
     }
 
-    const speed = input.shift ? MOVE_SPEED * 1.4 : MOVE_SPEED;
+    const speed = (input.shift ? MOVE_SPEED * 1.4 : MOVE_SPEED) * this.speedMultiplier;
     const targetVel = moveDir.multiplyScalar(speed);
 
     // Smooth acceleration
