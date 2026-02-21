@@ -59,6 +59,7 @@ function lcg(seed) {
   let s = seed | 0 || 1;
   return () => {
     s = Math.imul(s, 48271) % 0x7fffffff;
+    if (s < 0) s += 0x7fffffff;
     return s / 0x7fffffff;
   };
 }
