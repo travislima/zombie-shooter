@@ -6,6 +6,7 @@ import { Player } from './entities/Player.js';
 import { Weapon, WEAPON_TYPES } from './entities/Weapon.js';
 import { ProjectilePool } from './entities/Projectile.js';
 import { EnemyManager } from './entities/Enemy.js';
+import { ZombieTextures } from './entities/ZombieTextures.js';
 import { Arena } from './world/Arena.js';
 import { WaveManager } from './systems/WaveManager.js';
 import { Combat } from './systems/Combat.js';
@@ -76,6 +77,9 @@ export class Game {
     // Camera
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 500);
     this.scene.add(this.camera);
+
+    // Pre-generate zombie textures before creating the enemy pool
+    ZombieTextures.init();
 
     // Game objects
     this.player = new Player(this.camera);
