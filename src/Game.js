@@ -11,6 +11,8 @@ import { WaveManager } from './systems/WaveManager.js';
 import { Combat } from './systems/Combat.js';
 import { Particles } from './systems/Particles.js';
 import { PowerupManager } from './systems/Powerups.js';
+import { PostProcessing } from './systems/PostProcessing.js';
+import { AmbientFX } from './systems/AmbientFX.js';
 import { HUD } from './ui/HUD.js';
 import { Screens } from './ui/Screens.js';
 import { Shop } from './ui/Shop.js';
@@ -50,6 +52,12 @@ export class Game {
     this.combat = null;
     this.particles = null;
     this.powerups = null;
+    this.postProcessing = null;
+    this.ambientFX = null;
+
+    // Muzzle flash dynamic light
+    this.muzzleLight = null;
+    this.muzzleLightTimer = 0;
   }
 
   init() {
@@ -59,8 +67,7 @@ export class Game {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.5;
+    this.renderer.toneMapping = THREE.NoToneMapping;
     document.body.insertBefore(this.renderer.domElement, document.body.firstChild);
 
     // Scene
@@ -81,6 +88,15 @@ export class Game {
     this.combat = new Combat();
     this.particles = new Particles(this.scene);
     this.powerups = new PowerupManager(this.scene);
+    this.ambientFX = new AmbientFX(this.scene);
+
+    // Post-processing
+    this.postProcessing = new PostProcessing(this.renderer, this.scene, this.camera);
+
+    // Muzzle flash dynamic light (attached to camera)
+    this.muzzleLight = new THREE.PointLight(0xffaa44, 0, 12);
+    this.scene.add(this.muzzleLight);
+    this.muzzleLightTimer = 0;
 
     // Screen callbacks
     this.screens.init();
@@ -98,6 +114,7 @@ export class Game {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.postProcessing.resize(window.innerWidth, window.innerHeight);
     });
 
     // Pointer lock change handling
@@ -142,6 +159,7 @@ export class Game {
     this.combat.reset();
     this.particles.reset();
     this.powerups.reset();
+    this.ambientFX.reset();
     this.shop.reset();
     this.hud.displayedScore = 0;
 
@@ -281,8 +299,11 @@ export class Game {
       this._updateGameplay(dt);
     }
 
-    // Always render (for menu backgrounds etc)
-    this.renderer.render(this.scene, this.camera);
+    // Ambient FX always update (dust, embers, decal fading)
+    this.ambientFX.update(dt);
+
+    // Always render with post-processing
+    this.postProcessing.render(dt);
   }
 
   _updateGameplay(dt) {
@@ -311,6 +332,12 @@ export class Game {
     // Weapon update
     this.weapon.update(dt);
 
+    // Muzzle flash light decay
+    if (this.muzzleLightTimer > 0) {
+      this.muzzleLightTimer -= dt;
+      this.muzzleLight.intensity = Math.max(0, (this.muzzleLightTimer / 0.06) * 2.5);
+    }
+
     // Shooting - weapon.fire() now returns array of shots
     if (this.input.mouseDown && this.weapon.canFire()) {
       const shots = this.weapon.fire();
@@ -331,6 +358,11 @@ export class Game {
           firstShot.origin.clone().add(firstShot.direction.clone().multiplyScalar(1)),
           firstShot.direction,
         );
+
+        // Dynamic muzzle flash light
+        this.muzzleLight.position.copy(this.player.position);
+        this.muzzleLight.intensity = 2.5;
+        this.muzzleLightTimer = 0.06;
       }
     }
 
@@ -361,6 +393,8 @@ export class Game {
         this.particles.spawnScorePopup(hit.position, hit.points);
         // Chance to drop powerup
         this.powerups.onEnemyKilled(hit.position);
+        // Blood decal on ground
+        this.ambientFX.spawnBloodDecal(hit.position);
       }
     }
 

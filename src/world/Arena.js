@@ -276,7 +276,7 @@ export class Arena {
   }
 
   _buildSkybox() {
-    // Dark, ominous sky
+    // Dark, ominous sky with clouds and moon
     const skyGeo = new THREE.SphereGeometry(200, 32, 32);
     const skyMat = new THREE.ShaderMaterial({
       side: THREE.BackSide,
@@ -291,35 +291,96 @@ export class Arena {
         }
       `,
       fragmentShader: `
+        uniform float time;
         varying vec3 vWorldPos;
+
+        // Simple noise
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          f = f * f * (3.0 - 2.0 * f);
+          float a = hash(i);
+          float b = hash(i + vec2(1.0, 0.0));
+          float c = hash(i + vec2(0.0, 1.0));
+          float d = hash(i + vec2(1.0, 1.0));
+          return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+        }
+        float fbm(vec2 p) {
+          float v = 0.0;
+          float a = 0.5;
+          for (int i = 0; i < 4; i++) {
+            v += a * noise(p);
+            p *= 2.0;
+            a *= 0.5;
+          }
+          return v;
+        }
+
         void main() {
-          float h = normalize(vWorldPos).y;
-          // Dark apocalyptic sky
-          vec3 ground = vec3(0.25, 0.22, 0.18);
-          vec3 horizon = vec3(0.4, 0.28, 0.2);
-          vec3 sky = vec3(0.2, 0.18, 0.22);
-          vec3 col = mix(ground, horizon, smoothstep(-0.1, 0.05, h));
-          col = mix(col, sky, smoothstep(0.05, 0.5, h));
-          // Reddish tint near horizon
-          col += vec3(0.08, 0.02, 0.0) * (1.0 - smoothstep(0.0, 0.15, abs(h)));
+          vec3 dir = normalize(vWorldPos);
+          float h = dir.y;
+
+          // Base sky gradient
+          vec3 ground = vec3(0.18, 0.14, 0.11);
+          vec3 horizon = vec3(0.35, 0.2, 0.15);
+          vec3 sky = vec3(0.08, 0.07, 0.12);
+          vec3 zenith = vec3(0.04, 0.03, 0.08);
+
+          vec3 col = mix(ground, horizon, smoothstep(-0.1, 0.02, h));
+          col = mix(col, sky, smoothstep(0.02, 0.3, h));
+          col = mix(col, zenith, smoothstep(0.3, 0.8, h));
+
+          // Reddish glow near horizon
+          col += vec3(0.12, 0.03, 0.0) * (1.0 - smoothstep(0.0, 0.12, abs(h)));
+
+          // Moon
+          vec3 moonDir = normalize(vec3(0.4, 0.6, -0.5));
+          float moonDot = dot(dir, moonDir);
+          float moonDisc = smoothstep(0.997, 0.9985, moonDot);
+          float moonGlow = smoothstep(0.97, 0.999, moonDot) * 0.15;
+          col += vec3(0.9, 0.85, 0.75) * moonDisc;
+          col += vec3(0.3, 0.25, 0.2) * moonGlow;
+
+          // Clouds (only above horizon)
+          if (h > 0.0) {
+            vec2 cloudUV = dir.xz / (h + 0.1) * 2.0;
+            cloudUV += time * 0.005;
+            float clouds = fbm(cloudUV * 1.5);
+            clouds = smoothstep(0.35, 0.7, clouds);
+            float cloudFade = smoothstep(0.0, 0.15, h) * smoothstep(0.8, 0.3, h);
+            vec3 cloudColor = mix(vec3(0.15, 0.1, 0.08), vec3(0.25, 0.18, 0.14), clouds);
+            col = mix(col, cloudColor, clouds * 0.5 * cloudFade);
+          }
+
+          // Stars (only high in sky, dim)
+          if (h > 0.2) {
+            float starField = hash(floor(dir.xz * 500.0));
+            float starBright = step(0.997, starField) * smoothstep(0.2, 0.5, h);
+            col += vec3(0.7, 0.7, 0.8) * starBright * 0.4;
+          }
+
           gl_FragColor = vec4(col, 1.0);
         }
       `,
     });
     this.sky = new THREE.Mesh(skyGeo, skyMat);
+    this.skyMat = skyMat;
     this.scene.add(this.sky);
 
-    // Darker, closer fog
-    this.scene.fog = new THREE.FogExp2(0x3a3028, 0.018);
+    // Darker fog for atmosphere
+    this.scene.fog = new THREE.FogExp2(0x2a2018, 0.02);
   }
 
   _buildLighting() {
-    // Dim ambient - darker apocalyptic feel
-    const ambient = new THREE.AmbientLight(0x998877, 0.35);
+    // Ambient - tuned for NoToneMapping + post-processing pipeline
+    const ambient = new THREE.AmbientLight(0x998877, 0.5);
     this.scene.add(ambient);
 
     // Main directional light (low sun, warm/orange)
-    const dirLight = new THREE.DirectionalLight(0xffccaa, 0.6);
+    const dirLight = new THREE.DirectionalLight(0xeeddcc, 0.7);
     dirLight.position.set(8, 15, 5);
     dirLight.castShadow = true;
     dirLight.shadow.mapSize.width = 2048;
@@ -365,6 +426,11 @@ export class Arena {
   }
 
   update(dt) {
+    // Animate sky clouds
+    if (this.skyMat) {
+      this.skyMat.uniforms.time.value += dt;
+    }
+
     // Flicker fire lights
     if (this.fireLights) {
       for (const light of this.fireLights) {
