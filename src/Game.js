@@ -216,22 +216,30 @@ export class Game {
   }
 
   _startNextWave() {
-    // Show shop between waves (after wave 1)
-    if (this.waveManager.wave >= 1 && this.combat.score > 0) {
-      this.state = STATES.SHOP;
-      this.input.exitLock();
-      this.touchControls.disable();
-      this.hud.hide();
-      this.shop.open(this.combat.score);
-      return;
-    }
-
     this._beginWave();
+  }
+
+  _openShop() {
+    if (this.state !== STATES.PLAYING) return;
+    if (this.combat.score <= 0) return;
+    // Only allow between waves (complete or idle, i.e. no enemies active)
+    if (this.waveManager.isWaveActive || this.waveManager.isAnnouncing) return;
+
+    this.state = STATES.SHOP;
+    this.input.exitLock();
+    this.touchControls.disable();
+    this.hud.hide();
+    this.shop.open(this.combat.score);
   }
 
   _onShopClosed() {
     // Apply upgrades
     this.weapon.applyUpgrades(this.shop.levels);
+
+    // Equip newly purchased weapon
+    if (this.shop.selectedWeapon) {
+      this.weapon.switchWeapon(this.shop.selectedWeapon);
+    }
 
     // Apply health/shield upgrades
     const healthBonus = (this.shop.levels.maxHealth || 0) * 25;
@@ -253,7 +261,7 @@ export class Game {
       this.input.requestLock(this.renderer.domElement);
     }
     this.state = STATES.PLAYING;
-    this._beginWave();
+    this.clock.getDelta(); // reset delta to avoid jump
   }
 
   _beginWave() {
@@ -289,6 +297,12 @@ export class Game {
 
     if (this.input.consumeReload()) {
       this.weapon.startReload(this.audio);
+    }
+
+    // Shop key (B) - only between waves
+    if (this.input.consumeShop()) {
+      this._openShop();
+      if (this.state !== STATES.PLAYING) return;
     }
 
     // Player update
@@ -377,6 +391,16 @@ export class Game {
     this.waveManager.update(dt);
     if (this.waveManager.isIdle && this.player.alive) {
       this._startNextWave();
+    }
+
+    // Show/hide shop hint between waves
+    const betweenWaves = this.waveManager.isComplete || this.waveManager.isIdle;
+    const shopAvailable = betweenWaves && this.combat.score > 0;
+    this.hud.setShopAvailable(shopAvailable);
+    if (shopAvailable) {
+      this.touchControls.showShopButton();
+    } else {
+      this.touchControls.hideShopButton();
     }
 
     // Particles

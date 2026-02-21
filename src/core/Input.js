@@ -10,6 +10,7 @@ export class Input {
       this.keys[e.code] = true;
       if (e.code === 'Escape') this._escPressed = true;
       if (e.code === 'KeyR') this._reloadPressed = true;
+      if (e.code === 'KeyB') this._shopPressed = true;
     };
     this._onKeyUp = (e) => {
       this.keys[e.code] = false;
@@ -39,6 +40,7 @@ export class Input {
 
     this._escPressed = false;
     this._reloadPressed = false;
+    this._shopPressed = false;
   }
 
   consumeEsc() {
@@ -50,6 +52,12 @@ export class Input {
   consumeReload() {
     const v = this._reloadPressed;
     this._reloadPressed = false;
+    return v;
+  }
+
+  consumeShop() {
+    const v = this._shopPressed;
+    this._shopPressed = false;
     return v;
   }
 

@@ -36,12 +36,32 @@ const UPGRADES = {
   },
 };
 
+const WEAPONS = {
+  shotgun: {
+    name: 'SHOTGUN',
+    description: '6-pellet spread, close range',
+    cost: 800,
+  },
+  smg: {
+    name: 'SMG',
+    description: 'Fast fire, 40-round mag',
+    cost: 600,
+  },
+  sniper: {
+    name: 'SNIPER',
+    description: 'High damage, 5-round mag',
+    cost: 1000,
+  },
+};
+
 export class Shop {
   constructor() {
     this.levels = {};
     for (const key of Object.keys(UPGRADES)) {
       this.levels[key] = 0;
     }
+    this.ownedWeapons = new Set(['pistol']);
+    this.selectedWeapon = null; // weapon to switch to on close
 
     this.el = document.getElementById('shop-screen');
     this.itemsEl = document.getElementById('shop-items');
@@ -62,6 +82,8 @@ export class Shop {
     for (const key of Object.keys(UPGRADES)) {
       this.levels[key] = 0;
     }
+    this.ownedWeapons = new Set(['pistol']);
+    this.selectedWeapon = null;
   }
 
   getCost(upgradeKey) {
@@ -72,6 +94,7 @@ export class Shop {
 
   open(points) {
     this._availablePoints = points;
+    this.selectedWeapon = null;
     this._render();
     this.el.classList.remove('hidden');
     this.visible = true;
@@ -85,8 +108,44 @@ export class Shop {
 
   _render() {
     this.pointsEl.textContent = this._availablePoints.toLocaleString();
-
     this.itemsEl.innerHTML = '';
+
+    // Weapons section
+    const weaponHeader = document.createElement('div');
+    weaponHeader.className = 'shop-section-header';
+    weaponHeader.textContent = 'WEAPONS';
+    this.itemsEl.appendChild(weaponHeader);
+
+    for (const [key, config] of Object.entries(WEAPONS)) {
+      const owned = this.ownedWeapons.has(key);
+      const canAfford = this._availablePoints >= config.cost;
+
+      const item = document.createElement('div');
+      item.className = 'shop-item' + (owned ? ' owned' : '') + (!canAfford && !owned ? ' expensive' : '');
+
+      item.innerHTML = `
+        <div class="shop-item-info">
+          <div class="shop-item-name">${config.name}${owned ? ' (OWNED)' : ''}</div>
+          <div class="shop-item-desc">${config.description}</div>
+        </div>
+        <div class="shop-item-cost">${owned ? '---' : config.cost}</div>
+      `;
+
+      if (!owned && canAfford) {
+        item.addEventListener('click', () => {
+          this._purchaseWeapon(key);
+        });
+      }
+
+      this.itemsEl.appendChild(item);
+    }
+
+    // Upgrades section
+    const upgradeHeader = document.createElement('div');
+    upgradeHeader.className = 'shop-section-header';
+    upgradeHeader.textContent = 'UPGRADES';
+    this.itemsEl.appendChild(upgradeHeader);
+
     for (const [key, config] of Object.entries(UPGRADES)) {
       const level = this.levels[key];
       const maxed = level >= config.maxLevel;
@@ -114,6 +173,17 @@ export class Shop {
     }
   }
 
+  _purchaseWeapon(key) {
+    const config = WEAPONS[key];
+    if (!config || this.ownedWeapons.has(key)) return;
+    if (this._availablePoints < config.cost) return;
+
+    this._availablePoints -= config.cost;
+    this.ownedWeapons.add(key);
+    this.selectedWeapon = key; // auto-equip on close
+    this._render();
+  }
+
   _purchase(key) {
     const cost = this.getCost(key);
     if (this._availablePoints < cost) return;
@@ -125,11 +195,15 @@ export class Shop {
   }
 
   get spentPoints() {
-    // Calculate total points spent so we can deduct from score
     let total = 0;
     for (const [key, config] of Object.entries(UPGRADES)) {
       for (let i = 0; i < this.levels[key]; i++) {
         total += Math.round(config.baseCost * Math.pow(config.costScale, i));
+      }
+    }
+    for (const [key, config] of Object.entries(WEAPONS)) {
+      if (this.ownedWeapons.has(key)) {
+        total += config.cost;
       }
     }
     return total;
