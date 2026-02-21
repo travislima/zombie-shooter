@@ -17,21 +17,35 @@ export class Arena {
   }
 
   _buildGround() {
-    // Main floor - cracked earth with procedural texture
+    // Main floor - cracked earth with procedural texture (high-res)
+    const S = 1024;
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
+    canvas.width = S;
+    canvas.height = S;
     const ctx = canvas.getContext('2d');
 
     // Base color - dark earth
     ctx.fillStyle = '#5a4d3e';
-    ctx.fillRect(0, 0, 512, 512);
+    ctx.fillRect(0, 0, S, S);
 
-    // Add dirt variation
-    for (let i = 0; i < 3000; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const r = Math.random() * 4 + 1;
+    // Large-scale color variation
+    for (let i = 0; i < 20; i++) {
+      const x = Math.random() * S;
+      const y = Math.random() * S;
+      const r = 60 + Math.random() * 120;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+      const shift = Math.floor((Math.random() - 0.5) * 20);
+      grad.addColorStop(0, `rgba(${80 + shift}, ${70 + shift}, ${55 + shift}, 0.15)`);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, S, S);
+    }
+
+    // Add dirt variation (more detail at 1024)
+    for (let i = 0; i < 5000; i++) {
+      const x = Math.random() * S;
+      const y = Math.random() * S;
+      const r = Math.random() * 5 + 1;
       const shade = Math.floor(Math.random() * 30);
       ctx.fillStyle = `rgb(${75 + shade}, ${65 + shade}, ${50 + shade})`;
       ctx.beginPath();
@@ -39,29 +53,41 @@ export class Arena {
       ctx.fill();
     }
 
-    // Add crack lines
-    ctx.strokeStyle = '#3a3028';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 20; i++) {
+    // Gravel/pebble detail
+    for (let i = 0; i < 800; i++) {
+      const x = Math.random() * S;
+      const y = Math.random() * S;
+      const r = 1 + Math.random() * 2;
+      ctx.fillStyle = `rgba(${60 + Math.random() * 40 | 0},${50 + Math.random() * 35 | 0},${40 + Math.random() * 25 | 0},${0.3 + Math.random() * 0.4})`;
       ctx.beginPath();
-      let cx = Math.random() * 512;
-      let cy = Math.random() * 512;
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Add crack lines (more, thinner for detail)
+    for (let i = 0; i < 35; i++) {
+      ctx.strokeStyle = `rgba(58, 48, 40, ${0.3 + Math.random() * 0.4})`;
+      ctx.lineWidth = 0.5 + Math.random() * 1.5;
+      ctx.beginPath();
+      let cx = Math.random() * S;
+      let cy = Math.random() * S;
       ctx.moveTo(cx, cy);
-      for (let j = 0; j < 8; j++) {
-        cx += (Math.random() - 0.5) * 60;
-        cy += (Math.random() - 0.5) * 60;
+      for (let j = 0; j < 10; j++) {
+        cx += (Math.random() - 0.5) * 70;
+        cy += (Math.random() - 0.5) * 70;
         ctx.lineTo(cx, cy);
       }
       ctx.stroke();
     }
 
     // Blood stains
-    for (let i = 0; i < 8; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      const r = Math.random() * 20 + 10;
+    for (let i = 0; i < 12; i++) {
+      const x = Math.random() * S;
+      const y = Math.random() * S;
+      const r = Math.random() * 30 + 12;
       const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-      grad.addColorStop(0, 'rgba(80, 15, 10, 0.4)');
+      grad.addColorStop(0, `rgba(80, 15, 10, ${0.3 + Math.random() * 0.2})`);
+      grad.addColorStop(0.6, `rgba(60, 10, 5, ${0.1 + Math.random() * 0.1})`);
       grad.addColorStop(1, 'rgba(60, 10, 5, 0)');
       ctx.fillStyle = grad;
       ctx.beginPath();
@@ -69,16 +95,100 @@ export class Arena {
       ctx.fill();
     }
 
+    // Puddle/wet patches (darker, slightly reflective looking)
+    for (let i = 0; i < 6; i++) {
+      const x = Math.random() * S;
+      const y = Math.random() * S;
+      const r = 15 + Math.random() * 40;
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+      grad.addColorStop(0, 'rgba(30, 25, 20, 0.3)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, S, S);
+    }
+
     const texture = new THREE.CanvasTexture(canvas);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(4, 4);
+    texture.colorSpace = THREE.SRGBColorSpace;
+
+    // Generate ground normal map
+    const normCanvas = document.createElement('canvas');
+    normCanvas.width = normCanvas.height = 512;
+    const nctx = normCanvas.getContext('2d');
+    nctx.fillStyle = '#808080';
+    nctx.fillRect(0, 0, 512, 512);
+
+    // Surface bumps
+    for (let i = 0; i < 200; i++) {
+      const x = Math.random() * 512, y = Math.random() * 512, r = 2 + Math.random() * 8;
+      const b = 110 + Math.random() * 50;
+      const g = nctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgb(${b | 0},${b | 0},${b | 0})`);
+      g.addColorStop(1, 'rgba(128,128,128,0)');
+      nctx.fillStyle = g;
+      nctx.fillRect(0, 0, 512, 512);
+    }
+    // Crack depressions
+    for (let i = 0; i < 20; i++) {
+      nctx.strokeStyle = 'rgba(50,50,50,0.5)';
+      nctx.lineWidth = 1 + Math.random() * 2;
+      nctx.beginPath();
+      let cx = Math.random() * 512, cy = Math.random() * 512;
+      nctx.moveTo(cx, cy);
+      for (let j = 0; j < 6; j++) {
+        cx += (Math.random() - 0.5) * 50;
+        cy += (Math.random() - 0.5) * 50;
+        nctx.lineTo(cx, cy);
+      }
+      nctx.stroke();
+    }
+    // Convert heightmap to normal map
+    const hid = nctx.getImageData(0, 0, 512, 512);
+    const hdata = hid.data;
+    // Add noise
+    for (let i = 0; i < hdata.length; i += 4) {
+      const n = (Math.random() - 0.5) * 16;
+      const v = Math.max(0, Math.min(255, hdata[i] + n));
+      hdata[i] = hdata[i + 1] = hdata[i + 2] = v;
+    }
+    nctx.putImageData(hid, 0, 0);
+
+    const normData = nctx.getImageData(0, 0, 512, 512);
+    const ndata = normData.data;
+    const strength = 1.5;
+    for (let y = 0; y < 512; y++) {
+      for (let x = 0; x < 512; x++) {
+        const idx = (y * 512 + x) * 4;
+        const hL = hdata[(y * 512 + ((x - 1 + 512) % 512)) * 4] / 255;
+        const hR = hdata[(y * 512 + ((x + 1) % 512)) * 4] / 255;
+        const hU = hdata[(((y - 1 + 512) % 512) * 512 + x) * 4] / 255;
+        const hD = hdata[(((y + 1) % 512) * 512 + x) * 4] / 255;
+        const dx = (hL - hR) * strength;
+        const dy = (hU - hD) * strength;
+        const dz = 1.0;
+        const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        ndata[idx] = ((dx / len) * 0.5 + 0.5) * 255 | 0;
+        ndata[idx + 1] = ((dy / len) * 0.5 + 0.5) * 255 | 0;
+        ndata[idx + 2] = ((dz / len) * 0.5 + 0.5) * 255 | 0;
+        ndata[idx + 3] = 255;
+      }
+    }
+    nctx.putImageData(normData, 0, 0);
+
+    const normalMap = new THREE.CanvasTexture(normCanvas);
+    normalMap.wrapS = THREE.RepeatWrapping;
+    normalMap.wrapT = THREE.RepeatWrapping;
+    normalMap.repeat.set(4, 4);
 
     const floorGeo = new THREE.CircleGeometry(ARENA_RADIUS, 64);
     const floorMat = new THREE.MeshStandardMaterial({
       map: texture,
-      metalness: 0.05,
-      roughness: 0.95,
+      normalMap: normalMap,
+      normalScale: new THREE.Vector2(0.8, 0.8),
+      metalness: 0.15,
+      roughness: 0.82,
     });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
@@ -375,29 +485,39 @@ export class Arena {
   }
 
   _buildLighting() {
-    // Ambient - tuned for NoToneMapping + post-processing pipeline
-    const ambient = new THREE.AmbientLight(0x998877, 0.5);
+    // Hemisphere light for natural sky/ground ambient
+    const hemiLight = new THREE.HemisphereLight(0x556677, 0x3a2a1a, 0.6);
+    this.scene.add(hemiLight);
+
+    // Subtle warm ambient fill
+    const ambient = new THREE.AmbientLight(0x998877, 0.25);
     this.scene.add(ambient);
 
-    // Main directional light (low sun, warm/orange)
-    const dirLight = new THREE.DirectionalLight(0xeeddcc, 0.7);
+    // Main directional light (low moon, warm/orange) — 4K shadows
+    const dirLight = new THREE.DirectionalLight(0xeeddcc, 1.0);
     dirLight.position.set(8, 15, 5);
     dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 2048;
-    dirLight.shadow.mapSize.height = 2048;
+    dirLight.shadow.mapSize.width = 4096;
+    dirLight.shadow.mapSize.height = 4096;
     dirLight.shadow.camera.near = 1;
-    dirLight.shadow.camera.far = 50;
-    dirLight.shadow.camera.left = -20;
-    dirLight.shadow.camera.right = 20;
-    dirLight.shadow.camera.top = 20;
-    dirLight.shadow.camera.bottom = -20;
-    dirLight.shadow.bias = -0.001;
+    dirLight.shadow.camera.far = 40;
+    dirLight.shadow.camera.left = -18;
+    dirLight.shadow.camera.right = 18;
+    dirLight.shadow.camera.top = 18;
+    dirLight.shadow.camera.bottom = -18;
+    dirLight.shadow.bias = -0.0005;
+    dirLight.shadow.normalBias = 0.02;
     this.scene.add(dirLight);
 
-    // Subtle cool fill from opposite side
-    const fillLight = new THREE.DirectionalLight(0x556688, 0.15);
+    // Cool fill from opposite side (moonlight bounce)
+    const fillLight = new THREE.DirectionalLight(0x556688, 0.25);
     fillLight.position.set(-8, 8, -5);
     this.scene.add(fillLight);
+
+    // Rim light from behind (dramatic backlight silhouette)
+    const rimLight = new THREE.DirectionalLight(0x443355, 0.35);
+    rimLight.position.set(-5, 10, -10);
+    this.scene.add(rimLight);
 
     // Ground-level point lights for atmosphere (flickering fire barrels)
     const firePositions = [
@@ -407,8 +527,12 @@ export class Arena {
 
     this.fireLights = [];
     firePositions.forEach(fp => {
-      const light = new THREE.PointLight(0xff6622, 0.6, 8);
+      const light = new THREE.PointLight(0xff6622, 0.8, 10);
       light.position.set(fp.x, 1.2, fp.z);
+      light.castShadow = true;
+      light.shadow.mapSize.width = 512;
+      light.shadow.mapSize.height = 512;
+      light.shadow.bias = -0.002;
       this.group.add(light);
       this.fireLights.push(light);
 
@@ -416,7 +540,7 @@ export class Arena {
       const spriteMat = new THREE.SpriteMaterial({
         color: 0xff8833,
         transparent: true,
-        opacity: 0.3,
+        opacity: 0.35,
       });
       const sprite = new THREE.Sprite(spriteMat);
       sprite.position.set(fp.x, 0.9, fp.z);

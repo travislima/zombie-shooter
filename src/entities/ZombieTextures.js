@@ -41,7 +41,7 @@ const SKIN_CONFIGS = {
 };
 
 function genSkin(config, seed) {
-  const S = 256;
+  const S = 512;
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const ctx = c.getContext('2d');
@@ -52,81 +52,107 @@ function genSkin(config, seed) {
   ctx.fillStyle = `rgb(${br},${bg},${bb})`;
   ctx.fillRect(0, 0, S, S);
 
-  // Mottled patches
-  for (let i = 0; i < 55; i++) {
-    const px = r() * S, py = r() * S, pr = 8 + r() * 35;
+  // Large-scale skin variation (subsurface color bleed)
+  for (let i = 0; i < 15; i++) {
+    const px = r() * S, py = r() * S, pr = Math.max(1, 40 + r() * 80);
+    const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
+    const shift = (r() - 0.5) * 20;
+    g.addColorStop(0, `rgba(${br + shift | 0},${bg + shift * 0.7 | 0},${bb + shift * 0.5 | 0},${0.08 + r() * 0.12})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, S, S);
+  }
+
+  // Mottled patches (more at higher res)
+  for (let i = 0; i < 80; i++) {
+    const px = r() * S, py = r() * S, pr = Math.max(1, 6 + r() * 45);
     const pc = config.patches[i % config.patches.length];
     const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
-    g.addColorStop(0, `rgba(${pc[0]},${pc[1]},${pc[2]},${0.12 + r() * 0.2})`);
+    g.addColorStop(0, `rgba(${pc[0]},${pc[1]},${pc[2]},${0.1 + r() * 0.2})`);
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, S, S);
   }
 
   // Discoloration blotches
-  for (let i = 0; i < 10; i++) {
-    const px = r() * S, py = r() * S, pr = 15 + r() * 45;
+  for (let i = 0; i < 14; i++) {
+    const px = r() * S, py = r() * S, pr = Math.max(1, 20 + r() * 60);
     const dark = r() > 0.5;
     const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
     if (dark) {
-      g.addColorStop(0, `rgba(25,18,10,${0.08 + r() * 0.12})`);
+      g.addColorStop(0, `rgba(25,18,10,${0.08 + r() * 0.15})`);
     } else {
-      g.addColorStop(0, `rgba(${br + 40},${bg + 30},${bb + 20},${0.06 + r() * 0.1})`);
+      g.addColorStop(0, `rgba(${br + 40},${bg + 30},${bb + 20},${0.06 + r() * 0.12})`);
     }
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, S, S);
   }
 
-  // Veins
+  // Veins (more detail at higher res)
   const [vr, vg, vb, va] = config.vein;
-  ctx.lineWidth = 1.5;
-  for (let i = 0; i < 14; i++) {
-    ctx.strokeStyle = `rgba(${vr},${vg},${vb},${va * (0.6 + r() * 0.4)})`;
+  for (let i = 0; i < 20; i++) {
+    ctx.lineWidth = 0.8 + r() * 1.5;
+    ctx.strokeStyle = `rgba(${vr},${vg},${vb},${va * (0.5 + r() * 0.5)})`;
     ctx.beginPath();
     let lx = r() * S, ly = r() * S;
     ctx.moveTo(lx, ly);
-    const segs = 3 + (r() * 5 | 0);
+    const segs = 3 + (r() * 7 | 0);
     for (let j = 0; j < segs; j++) {
-      lx += (r() - 0.5) * 50;
-      ly += (r() - 0.5) * 50;
+      lx += (r() - 0.5) * 60;
+      ly += (r() - 0.5) * 60;
       ctx.lineTo(lx, ly);
     }
     ctx.stroke();
-    // Branching
-    if (r() > 0.4) {
-      ctx.lineWidth = 0.7;
-      ctx.lineTo(lx + (r() - 0.5) * 30, ly + (r() - 0.5) * 30);
-      ctx.stroke();
-      ctx.lineWidth = 1.5;
+    // Branching veins
+    if (r() > 0.35) {
+      ctx.lineWidth = 0.4 + r() * 0.6;
+      const branches = 1 + (r() * 2 | 0);
+      for (let b = 0; b < branches; b++) {
+        ctx.lineTo(lx + (r() - 0.5) * 40, ly + (r() - 0.5) * 40);
+        ctx.stroke();
+      }
     }
   }
 
   // Wounds
   const [wr, wg, wb] = config.wound;
-  for (let i = 0; i < 7; i++) {
-    const wx = r() * S, wy = r() * S, wrad = 4 + r() * 16;
+  for (let i = 0; i < 10; i++) {
+    const wx = r() * S, wy = r() * S, wrad = Math.max(1, 5 + r() * 22);
     const g = ctx.createRadialGradient(wx, wy, 0, wx, wy, wrad);
     g.addColorStop(0, `rgba(${wr},${wg},${wb},0.75)`);
-    g.addColorStop(0.45, `rgba(${wr * 0.6 | 0},${wg * 0.4 | 0},${wb * 0.4 | 0},0.35)`);
+    g.addColorStop(0.35, `rgba(${wr * 0.7 | 0},${wg * 0.4 | 0},${wb * 0.4 | 0},0.45)`);
+    g.addColorStop(0.7, `rgba(${wr * 0.4 | 0},${wg * 0.2 | 0},${wb * 0.2 | 0},0.15)`);
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, S, S);
     // Deeper wound center
-    if (wrad > 9) {
-      const g2 = ctx.createRadialGradient(wx, wy, 0, wx, wy, wrad * 0.35);
-      g2.addColorStop(0, 'rgba(35,5,5,0.55)');
+    if (wrad > 8) {
+      const g2 = ctx.createRadialGradient(wx, wy, 0, wx, wy, Math.max(1, wrad * 0.35));
+      g2.addColorStop(0, 'rgba(35,5,5,0.6)');
       g2.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g2;
       ctx.fillRect(0, 0, S, S);
     }
   }
 
+  // Pore/skin texture detail - fine speckle
+  for (let i = 0; i < 300; i++) {
+    const sx = r() * S, sy = r() * S, sr = 1 + r() * 3;
+    const dark = r() > 0.5;
+    ctx.fillStyle = dark
+      ? `rgba(0,0,0,${0.03 + r() * 0.06})`
+      : `rgba(255,255,255,${0.02 + r() * 0.04})`;
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   // Pixel noise for skin pore detail
   const id = ctx.getImageData(0, 0, S, S);
   const d = id.data;
   for (let i = 0; i < d.length; i += 4) {
-    const n = (r() - 0.5) * 16;
+    const n = (r() - 0.5) * 14;
     d[i] = Math.max(0, Math.min(255, d[i] + n));
     d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + n));
     d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + n));
@@ -135,65 +161,112 @@ function genSkin(config, seed) {
 
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
-function genBump(seed) {
-  const S = 128;
+function genNormal(seed) {
+  const S = 256;
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const ctx = c.getContext('2d');
   const r = lcg(seed);
 
-  // Mid-grey base
-  ctx.fillStyle = '#808080';
+  // Start with flat normal (128, 128, 255)
+  ctx.fillStyle = 'rgb(128,128,255)';
   ctx.fillRect(0, 0, S, S);
 
+  // Generate a heightmap first, then convert to normals
+  const heightCanvas = document.createElement('canvas');
+  heightCanvas.width = heightCanvas.height = S;
+  const hctx = heightCanvas.getContext('2d');
+
+  // Mid-grey base
+  hctx.fillStyle = '#808080';
+  hctx.fillRect(0, 0, S, S);
+
   // Raised bumps (skin lumps, swelling)
-  for (let i = 0; i < 45; i++) {
-    const px = r() * S, py = r() * S, pr = 4 + r() * 20;
-    const b = 95 + r() * 75;
-    const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
+  for (let i = 0; i < 55; i++) {
+    const px = r() * S, py = r() * S, pr = Math.max(1, 4 + r() * 25);
+    const b = 100 + r() * 80;
+    const g = hctx.createRadialGradient(px, py, 0, px, py, pr);
     g.addColorStop(0, `rgb(${b | 0},${b | 0},${b | 0})`);
     g.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, S, S);
+    hctx.fillStyle = g;
+    hctx.fillRect(0, 0, S, S);
   }
 
   // Vein ridges (raised lines)
-  ctx.strokeStyle = 'rgba(190,190,190,0.3)';
-  ctx.lineWidth = 2.5;
-  for (let i = 0; i < 8; i++) {
-    ctx.beginPath();
+  hctx.strokeStyle = 'rgba(195,195,195,0.35)';
+  hctx.lineWidth = 3;
+  for (let i = 0; i < 10; i++) {
+    hctx.beginPath();
     let lx = r() * S, ly = r() * S;
-    ctx.moveTo(lx, ly);
-    for (let j = 0; j < 4; j++) {
-      lx += (r() - 0.5) * 40;
-      ly += (r() - 0.5) * 40;
-      ctx.lineTo(lx, ly);
+    hctx.moveTo(lx, ly);
+    for (let j = 0; j < 5; j++) {
+      lx += (r() - 0.5) * 45;
+      ly += (r() - 0.5) * 45;
+      hctx.lineTo(lx, ly);
     }
-    ctx.stroke();
+    hctx.stroke();
   }
 
   // Wound depressions (dark = sunken)
-  for (let i = 0; i < 6; i++) {
-    const px = r() * S, py = r() * S, pr = 3 + r() * 12;
-    const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
-    g.addColorStop(0, 'rgba(35,35,35,0.55)');
+  for (let i = 0; i < 8; i++) {
+    const px = r() * S, py = r() * S, pr = Math.max(1, 3 + r() * 15);
+    const g = hctx.createRadialGradient(px, py, 0, px, py, pr);
+    g.addColorStop(0, 'rgba(30,30,30,0.6)');
     g.addColorStop(1, 'rgba(128,128,128,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, S, S);
+    hctx.fillStyle = g;
+    hctx.fillRect(0, 0, S, S);
   }
 
-  // Fine noise
-  const id = ctx.getImageData(0, 0, S, S);
-  const d = id.data;
-  for (let i = 0; i < d.length; i += 4) {
-    const n = (r() - 0.5) * 22;
-    const v = Math.max(0, Math.min(255, d[i] + n));
-    d[i] = d[i + 1] = d[i + 2] = v;
+  // Fine surface noise
+  const hid = hctx.getImageData(0, 0, S, S);
+  const hd = hid.data;
+  for (let i = 0; i < hd.length; i += 4) {
+    const n = (r() - 0.5) * 24;
+    const v = Math.max(0, Math.min(255, hd[i] + n));
+    hd[i] = hd[i + 1] = hd[i + 2] = v;
   }
-  ctx.putImageData(id, 0, 0);
+  hctx.putImageData(hid, 0, 0);
+
+  // Read height data and compute normals via Sobel
+  const heightData = hctx.getImageData(0, 0, S, S).data;
+  const normalData = ctx.getImageData(0, 0, S, S);
+  const nd = normalData.data;
+  const strength = 2.0;
+
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const idx = (y * S + x) * 4;
+
+      // Sample neighbors (wrap around for tiling)
+      const xL = ((x - 1 + S) % S);
+      const xR = ((x + 1) % S);
+      const yU = ((y - 1 + S) % S);
+      const yD = ((y + 1) % S);
+
+      const hL = heightData[(y * S + xL) * 4] / 255;
+      const hR = heightData[(y * S + xR) * 4] / 255;
+      const hU = heightData[(yU * S + x) * 4] / 255;
+      const hD = heightData[(yD * S + x) * 4] / 255;
+
+      // Compute normal from height differences
+      const dx = (hL - hR) * strength;
+      const dy = (hU - hD) * strength;
+      const dz = 1.0;
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+      // Map to [0, 255] range (tangent-space normal map)
+      nd[idx] = Math.round(((dx / len) * 0.5 + 0.5) * 255);
+      nd[idx + 1] = Math.round(((dy / len) * 0.5 + 0.5) * 255);
+      nd[idx + 2] = Math.round(((dz / len) * 0.5 + 0.5) * 255);
+      nd[idx + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(normalData, 0, 0);
 
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -201,7 +274,7 @@ function genBump(seed) {
 }
 
 function genClothing(fabricColor, seed) {
-  const S = 128;
+  const S = 256;
   const c = document.createElement('canvas');
   c.width = c.height = S;
   const ctx = c.getContext('2d');
@@ -212,24 +285,31 @@ function genClothing(fabricColor, seed) {
   ctx.fillStyle = `rgb(${fr},${fg},${fb})`;
   ctx.fillRect(0, 0, S, S);
 
-  // Subtle weave lines
-  ctx.strokeStyle = `rgba(${fr * 0.7 | 0},${fg * 0.7 | 0},${fb * 0.7 | 0},0.15)`;
+  // Fabric weave pattern (horizontal + vertical)
   ctx.lineWidth = 0.5;
   for (let y = 0; y < S; y += 3) {
+    ctx.strokeStyle = `rgba(${fr * 0.7 | 0},${fg * 0.7 | 0},${fb * 0.7 | 0},${0.1 + r() * 0.1})`;
     ctx.beginPath();
     ctx.moveTo(0, y);
     ctx.lineTo(S, y);
     ctx.stroke();
   }
+  for (let x = 0; x < S; x += 5) {
+    ctx.strokeStyle = `rgba(${fr * 0.75 | 0},${fg * 0.75 | 0},${fb * 0.75 | 0},${0.05 + r() * 0.08})`;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, S);
+    ctx.stroke();
+  }
 
   // Dirt and blood stains
-  for (let i = 0; i < 8; i++) {
-    const px = r() * S, py = r() * S, pr = 8 + r() * 25;
+  for (let i = 0; i < 12; i++) {
+    const px = r() * S, py = r() * S, pr = Math.max(1, 8 + r() * 35);
     const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
     if (r() > 0.5) {
-      g.addColorStop(0, `rgba(70,12,8,${0.2 + r() * 0.3})`);
+      g.addColorStop(0, `rgba(70,12,8,${0.2 + r() * 0.35})`);
     } else {
-      g.addColorStop(0, `rgba(30,25,18,${0.15 + r() * 0.25})`);
+      g.addColorStop(0, `rgba(30,25,18,${0.15 + r() * 0.3})`);
     }
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
@@ -237,17 +317,29 @@ function genClothing(fabricColor, seed) {
   }
 
   // Wear/fading
-  for (let i = 0; i < 6; i++) {
-    const px = r() * S, py = r() * S, pr = 12 + r() * 30;
+  for (let i = 0; i < 8; i++) {
+    const px = r() * S, py = r() * S, pr = Math.max(1, 15 + r() * 40);
     const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
-    g.addColorStop(0, `rgba(${fr + 25},${fg + 25},${fb + 25},${0.08 + r() * 0.1})`);
+    g.addColorStop(0, `rgba(${fr + 25},${fg + 25},${fb + 25},${0.08 + r() * 0.12})`);
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, S, S);
   }
 
+  // Fine noise
+  const id = ctx.getImageData(0, 0, S, S);
+  const d = id.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const n = (r() - 0.5) * 12;
+    d[i] = Math.max(0, Math.min(255, d[i] + n));
+    d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + n));
+    d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + n));
+  }
+  ctx.putImageData(id, 0, 0);
+
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 
@@ -258,7 +350,7 @@ export class ZombieTextures {
       for (let v = 0; v < 2; v++) {
         const base = type.charCodeAt(0) * 100 + v;
         cache.set(`${type}_${v}_skin`, genSkin(cfg, base));
-        cache.set(`${type}_${v}_bump`, genBump(base + 500));
+        cache.set(`${type}_${v}_normal`, genNormal(base + 500));
       }
     }
     cache.set('shirt_0', genClothing([50, 48, 42], 7000));
@@ -269,8 +361,8 @@ export class ZombieTextures {
     return cache.get(`${type}_${v}_skin`);
   }
 
-  static getBump(type, v) {
-    return cache.get(`${type}_${v}_bump`);
+  static getNormal(type, v) {
+    return cache.get(`${type}_${v}_normal`);
   }
 
   static getShirt(v) {
