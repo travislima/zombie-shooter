@@ -38,40 +38,13 @@ const POWERUP_TYPES = {
       weapon.damageMultiplier = Math.max(1, weapon.damageMultiplier / 2);
     },
   },
-  weapon_shotgun: {
-    color: 0xff6633,
-    emissive: 0xaa3311,
-    label: 'SHOTGUN',
-    apply: (player, weapon) => {
-      weapon.switchWeapon('shotgun');
-    },
-  },
-  weapon_smg: {
-    color: 0x33aaff,
-    emissive: 0x1166aa,
-    label: 'SMG',
-    apply: (player, weapon) => {
-      weapon.switchWeapon('smg');
-    },
-  },
-  weapon_sniper: {
-    color: 0x44ff44,
-    emissive: 0x22aa22,
-    label: 'SNIPER',
-    apply: (player, weapon) => {
-      weapon.switchWeapon('sniper');
-    },
-  },
 };
 
 // Weighted random selection
 const DROP_TABLE = [
-  { type: 'health', weight: 35 },
-  { type: 'speed', weight: 15 },
-  { type: 'damage', weight: 15 },
-  { type: 'weapon_shotgun', weight: 12 },
-  { type: 'weapon_smg', weight: 12 },
-  { type: 'weapon_sniper', weight: 11 },
+  { type: 'health', weight: 50 },
+  { type: 'speed', weight: 25 },
+  { type: 'damage', weight: 25 },
 ];
 
 const TOTAL_WEIGHT = DROP_TABLE.reduce((sum, e) => sum + e.weight, 0);

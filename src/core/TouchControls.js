@@ -36,6 +36,7 @@ export class TouchControls {
       </div>
       <div id="touch-fire-btn">FIRE</div>
       <div id="touch-reload-btn">R</div>
+      <div id="touch-shop-btn" style="display:none;">SHOP</div>
     `;
     document.body.appendChild(this.el);
 
@@ -44,6 +45,7 @@ export class TouchControls {
     this.joystickKnob = document.getElementById('touch-joystick-knob');
     this.fireBtn = document.getElementById('touch-fire-btn');
     this.reloadBtn = document.getElementById('touch-reload-btn');
+    this.shopBtn = document.getElementById('touch-shop-btn');
   }
 
   _bindEvents() {
@@ -82,6 +84,13 @@ export class TouchControls {
       this.input._reloadPressed = true;
     });
 
+    // Shop button
+    this.shopBtn.addEventListener('touchstart', (e) => {
+      if (!this.enabled) return;
+      e.preventDefault();
+      this.input._shopPressed = true;
+    });
+
     // Look area - right side touch that's not on buttons
     document.addEventListener('touchstart', (e) => {
       if (!this.enabled) return;
@@ -90,6 +99,7 @@ export class TouchControls {
         if (touch.clientX > window.innerWidth * 0.4 &&
             !this.fireBtn.contains(touch.target) &&
             !this.reloadBtn.contains(touch.target) &&
+            !this.shopBtn.contains(touch.target) &&
             !this.joystickArea.contains(touch.target)) {
           this.lookTouchId = touch.identifier;
           this.lastLookPos.x = touch.clientX;
@@ -186,5 +196,13 @@ export class TouchControls {
       this.input.keys['KeyA'] = false;
       this.input.keys['KeyD'] = false;
     }
+  }
+
+  showShopButton() {
+    if (this.shopBtn) this.shopBtn.style.display = 'flex';
+  }
+
+  hideShopButton() {
+    if (this.shopBtn) this.shopBtn.style.display = 'none';
   }
 }

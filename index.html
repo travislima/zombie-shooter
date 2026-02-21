@@ -186,12 +186,19 @@
       background: rgba(255, 255, 0, 0.08);
       border-color: #ff0;
     }
-    .shop-item.maxed {
+    .shop-item.maxed, .shop-item.owned {
       opacity: 0.4;
       cursor: default;
       border-color: #333;
     }
-    .shop-item.maxed:hover { background: transparent; border-color: #333; }
+    .shop-item.maxed:hover, .shop-item.owned:hover { background: transparent; border-color: #333; }
+    .shop-section-header {
+      font-size: 0.7rem;
+      color: #998;
+      margin-top: 14px;
+      margin-bottom: 4px;
+      letter-spacing: 0.15em;
+    }
     .shop-item.expensive {
       opacity: 0.5;
       cursor: default;
@@ -513,6 +520,36 @@
       color: #aaa;
       pointer-events: auto;
     }
+    #touch-shop-btn {
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 24px;
+      border-radius: 6px;
+      background: rgba(255, 255, 0, 0.15);
+      border: 1px solid rgba(255, 255, 0, 0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      color: #ff0;
+      pointer-events: auto;
+    }
+
+    /* Shop hint (between waves) */
+    #shop-hint {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.85rem;
+      color: #ff0;
+      text-shadow: 0 0 10px rgba(255, 255, 0, 0.3);
+      display: none;
+      animation: pulse 1.5s infinite;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -618,6 +655,7 @@
     </div>
 
     <div id="pickup-notify"></div>
+    <div id="shop-hint">[B] SHOP</div>
   </div>
 
   <div id="damage-vignette"></div>

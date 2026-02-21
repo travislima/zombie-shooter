@@ -17,6 +17,7 @@ export class HUD {
       waveAnnounceSub: document.getElementById('wave-announce-sub'),
       weaponName: document.getElementById('weapon-name'),
       pickupNotify: document.getElementById('pickup-notify'),
+      shopHint: document.getElementById('shop-hint'),
     };
 
     this.hitMarkerTimer = 0;
@@ -148,6 +149,12 @@ export class HUD {
       x: (Math.random() - 0.5) * this.screenShakeAmount * 0.02,
       y: (Math.random() - 0.5) * this.screenShakeAmount * 0.02,
     };
+  }
+
+  setShopAvailable(available) {
+    if (this.el.shopHint) {
+      this.el.shopHint.style.display = available ? 'block' : 'none';
+    }
   }
 
   showWaveAnnouncement(wave, subtext) {
