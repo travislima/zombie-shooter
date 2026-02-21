@@ -54,7 +54,7 @@ function genSkin(config, seed) {
 
   // Mottled patches
   for (let i = 0; i < 55; i++) {
-    const px = r() * S, py = r() * S, pr = 8 + r() * 35;
+    const px = r() * S, py = r() * S, pr = Math.max(1, 8 + r() * 35);
     const pc = config.patches[i % config.patches.length];
     const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
     g.addColorStop(0, `rgba(${pc[0]},${pc[1]},${pc[2]},${0.12 + r() * 0.2})`);
@@ -65,7 +65,7 @@ function genSkin(config, seed) {
 
   // Discoloration blotches
   for (let i = 0; i < 10; i++) {
-    const px = r() * S, py = r() * S, pr = 15 + r() * 45;
+    const px = r() * S, py = r() * S, pr = Math.max(1, 15 + r() * 45);
     const dark = r() > 0.5;
     const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
     if (dark) {
@@ -105,7 +105,7 @@ function genSkin(config, seed) {
   // Wounds
   const [wr, wg, wb] = config.wound;
   for (let i = 0; i < 7; i++) {
-    const wx = r() * S, wy = r() * S, wrad = 4 + r() * 16;
+    const wx = r() * S, wy = r() * S, wrad = Math.max(1, 4 + r() * 16);
     const g = ctx.createRadialGradient(wx, wy, 0, wx, wy, wrad);
     g.addColorStop(0, `rgba(${wr},${wg},${wb},0.75)`);
     g.addColorStop(0.45, `rgba(${wr * 0.6 | 0},${wg * 0.4 | 0},${wb * 0.4 | 0},0.35)`);
@@ -114,7 +114,7 @@ function genSkin(config, seed) {
     ctx.fillRect(0, 0, S, S);
     // Deeper wound center
     if (wrad > 9) {
-      const g2 = ctx.createRadialGradient(wx, wy, 0, wx, wy, wrad * 0.35);
+      const g2 = ctx.createRadialGradient(wx, wy, 0, wx, wy, Math.max(1, wrad * 0.35));
       g2.addColorStop(0, 'rgba(35,5,5,0.55)');
       g2.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g2;
@@ -151,7 +151,7 @@ function genBump(seed) {
 
   // Raised bumps (skin lumps, swelling)
   for (let i = 0; i < 45; i++) {
-    const px = r() * S, py = r() * S, pr = 4 + r() * 20;
+    const px = r() * S, py = r() * S, pr = Math.max(1, 4 + r() * 20);
     const b = 95 + r() * 75;
     const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
     g.addColorStop(0, `rgb(${b | 0},${b | 0},${b | 0})`);
@@ -177,7 +177,7 @@ function genBump(seed) {
 
   // Wound depressions (dark = sunken)
   for (let i = 0; i < 6; i++) {
-    const px = r() * S, py = r() * S, pr = 3 + r() * 12;
+    const px = r() * S, py = r() * S, pr = Math.max(1, 3 + r() * 12);
     const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
     g.addColorStop(0, 'rgba(35,35,35,0.55)');
     g.addColorStop(1, 'rgba(128,128,128,0)');
@@ -224,7 +224,7 @@ function genClothing(fabricColor, seed) {
 
   // Dirt and blood stains
   for (let i = 0; i < 8; i++) {
-    const px = r() * S, py = r() * S, pr = 8 + r() * 25;
+    const px = r() * S, py = r() * S, pr = Math.max(1, 8 + r() * 25);
     const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
     if (r() > 0.5) {
       g.addColorStop(0, `rgba(70,12,8,${0.2 + r() * 0.3})`);
@@ -238,7 +238,7 @@ function genClothing(fabricColor, seed) {
 
   // Wear/fading
   for (let i = 0; i < 6; i++) {
-    const px = r() * S, py = r() * S, pr = 12 + r() * 30;
+    const px = r() * S, py = r() * S, pr = Math.max(1, 12 + r() * 30);
     const g = ctx.createRadialGradient(px, py, 0, px, py, pr);
     g.addColorStop(0, `rgba(${fr + 25},${fg + 25},${fb + 25},${0.08 + r() * 0.1})`);
     g.addColorStop(1, 'rgba(0,0,0,0)');
