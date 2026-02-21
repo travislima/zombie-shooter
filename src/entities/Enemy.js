@@ -177,18 +177,18 @@ class EnemyInstance {
 
     // Default textures (swapped per-type in activate)
     const defaultSkin = ZombieTextures.getSkin('walker', 0);
-    const defaultBump = ZombieTextures.getBump('walker', 0);
+    const defaultNormal = ZombieTextures.getNormal('walker', 0);
 
     // --- Torso ---
     this.bodyMat = new THREE.MeshStandardMaterial({
       map: defaultSkin,
-      bumpMap: defaultBump,
-      bumpScale: 0.15,
+      normalMap: defaultNormal,
+      normalScale: new THREE.Vector2(1.2, 1.2),
       color: 0xffffff,
       emissive: 0x2a4a1a,
       emissiveIntensity: 0.15,
-      metalness: 0.05,
-      roughness: 0.85,
+      metalness: 0.08,
+      roughness: 0.78,
     });
     this.torso = new THREE.Mesh(GEO.torso, this.bodyMat);
     this.torso.position.y = 0;
@@ -207,11 +207,11 @@ class EnemyInstance {
     // --- Head ---
     this.headMat = new THREE.MeshStandardMaterial({
       map: defaultSkin,
-      bumpMap: defaultBump,
-      bumpScale: 0.12,
+      normalMap: defaultNormal,
+      normalScale: new THREE.Vector2(1.0, 1.0),
       color: 0xffffff,
-      roughness: 0.75,
-      metalness: 0.05,
+      roughness: 0.7,
+      metalness: 0.08,
     });
     this.head = new THREE.Mesh(GEO.head, this.headMat);
     this.head.position.y = 0.4;
@@ -259,13 +259,13 @@ class EnemyInstance {
     // --- Arms (CapsuleGeometry for organic rounded limbs) ---
     this.armMatL = new THREE.MeshStandardMaterial({
       map: defaultSkin,
-      bumpMap: defaultBump,
-      bumpScale: 0.12,
+      normalMap: defaultNormal,
+      normalScale: new THREE.Vector2(1.0, 1.0),
       color: 0xffffff,
       emissive: 0x2a4a1a,
       emissiveIntensity: 0.1,
-      metalness: 0.05,
-      roughness: 0.85,
+      metalness: 0.08,
+      roughness: 0.78,
     });
     this.armMatR = this.armMatL.clone();
 
@@ -288,11 +288,11 @@ class EnemyInstance {
     // --- Legs (CapsuleGeometry) ---
     this.legMatL = new THREE.MeshStandardMaterial({
       map: defaultSkin,
-      bumpMap: defaultBump,
-      bumpScale: 0.1,
+      normalMap: defaultNormal,
+      normalScale: new THREE.Vector2(0.8, 0.8),
       color: 0xffffff,
-      roughness: 0.9,
-      metalness: 0.05,
+      roughness: 0.82,
+      metalness: 0.06,
     });
     this.legMatR = this.legMatL.clone();
 
@@ -315,10 +315,10 @@ class EnemyInstance {
     // --- Tank-specific: shoulder growths/tumors ---
     this.growthMat = new THREE.MeshStandardMaterial({
       color: 0x6a4a6a,
-      roughness: 0.65,
-      metalness: 0.1,
-      bumpMap: defaultBump,
-      bumpScale: 0.2,
+      roughness: 0.55,
+      metalness: 0.12,
+      normalMap: defaultNormal,
+      normalScale: new THREE.Vector2(1.5, 1.5),
     });
     this.growthL = new THREE.Mesh(GEO.growth, this.growthMat);
     this.growthL.position.set(-0.22, 0.32, 0);
@@ -391,34 +391,34 @@ class EnemyInstance {
 
     // --- Assign skin textures per type ---
     const skin = ZombieTextures.getSkin(type, v);
-    const bump = ZombieTextures.getBump(type, v);
+    const normal = ZombieTextures.getNormal(type, v);
 
     this.bodyMat.map = skin;
-    this.bodyMat.bumpMap = bump;
+    this.bodyMat.normalMap = normal;
     this.bodyMat.color.set(0xffffff);
     this.bodyMat.emissive.set(config.emissive);
     this.bodyMat.emissiveIntensity = 0.15;
 
     this.headMat.map = skin;
-    this.headMat.bumpMap = bump;
+    this.headMat.normalMap = normal;
     this.headMat.color.set(0xffffff);
 
     this.armMatL.map = skin;
-    this.armMatL.bumpMap = bump;
+    this.armMatL.normalMap = normal;
     this.armMatL.color.set(0xffffff);
     this.armMatL.emissive.set(config.emissive);
     this.armMatL.emissiveIntensity = 0.1;
     this.armMatR.map = skin;
-    this.armMatR.bumpMap = bump;
+    this.armMatR.normalMap = normal;
     this.armMatR.color.set(0xffffff);
     this.armMatR.emissive.set(config.emissive);
     this.armMatR.emissiveIntensity = 0.1;
 
     this.legMatL.map = skin;
-    this.legMatL.bumpMap = bump;
+    this.legMatL.normalMap = normal;
     this.legMatL.color.set(0xffffff);
     this.legMatR.map = skin;
-    this.legMatR.bumpMap = bump;
+    this.legMatR.normalMap = normal;
     this.legMatR.color.set(0xffffff);
 
     this._origColor.set(0xffffff);
